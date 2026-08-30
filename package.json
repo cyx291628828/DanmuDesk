@@ -1,0 +1,67 @@
+{
+  "name": "danmudesks",
+  "productName": "DanmuDesk 弹幕桌面",
+  "version": "0.1.0",
+  "description": "抖音直播弹幕桌面应用（基于 dycast 核心移植）",
+  "main": "dist/main.js",
+  "author": "DanmuDesk",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && node scripts/launch.cjs",
+    "dev": "npm run build && node scripts/launch.cjs --dev",
+    "selftest": "node scripts/launch.cjs",
+    "dist": "electron-builder --win",
+    "dist:nsis": "electron-builder --win nsis",
+    "dist:portable": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.danmudesks.app",
+    "productName": "DanmuDesk 弹幕桌面",
+    "asar": true,
+    "files": [
+      "dist/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "electronDist": "node_modules/electron/dist",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "DanmuDesk 弹幕桌面",
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "dependencies": {
+    "agent-base": "^9.0.0",
+    "http-proxy-agent": "^7.0.2",
+    "https-proxy-agent": "^9.1.0",
+    "pako": "^3.0.1",
+    "protobufjs": "^7.4.0",
+    "stat-mode": "^1.0.0",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.24.0"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+log/
+release/
+tmp/
+*.log
+*.bak
+.DS_Store
+license-private-key.pem
+license-public-key.pem

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(grep -E \"\\(^var |^function |^async function |^\\\\}$\\)\")",
+      "Bash(awk *)",
+      "Bash(npm start *)",
+      "Bash(taskkill /F /IM DanmuDesk.exe)",
+      "Bash(set DEBUG_SIGN=1)"
+    ]
+  }
+}

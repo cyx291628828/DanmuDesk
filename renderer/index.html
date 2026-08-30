@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https: http:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+<title>DanmuDesk 弹幕桌面</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="toolbar">
+  <div class="brand">
+    <span class="logo">D</span>
+    <span class="title">DanmuDesk <em>弹幕桌面</em></span>
+  </div>
+  <div class="controls">
+    <div class="input-wrap">
+      <input id="roomInput" type="text" placeholder="输入抖音直播间链接或房间号，如 live.douyin.com/123456 或 123456" spellcheck="false" autocomplete="off" />
+      <!-- 历史连接下拉：点击输入框弹出，展示最近连接成功的直播间（最多 20 条，容器可视 5 条滚动） -->
+      <div id="historyPanel" class="history-panel" hidden>
+        <div class="history-head">
+          <span>历史连接</span>
+          <button id="historyClear" class="history-clear" type="button">清空</button>
+        </div>
+        <div id="historyList" class="history-list"></div>
+      </div>
+    </div>
+    <button id="connectBtn" class="primary">新增连接</button>
+    <!-- 授权状态标识：点击打开授权弹窗（试用剩余/已授权/已过期） -->
+    <button id="licenseChip" class="license-chip" title="授权状态">授权</button>
+    <!-- 右上角用户区：未登录=抖音图标，已登录=用户头像；hover 弹出用户卡片（抖音网页端风格） -->
+    <div class="user-trigger" id="userTrigger">
+      <!-- 未登录：抖音图标（青红渐变音符） -->
+      <span id="userIconFallback" class="icon-fallback" title="登录抖音账号">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <defs>
+            <linearGradient id="dygrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#25F4EE" />
+              <stop offset="1" stop-color="#FE2C55" />
+            </linearGradient>
+          </defs>
+          <path fill="url(#dygrad)" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+        </svg>
+      </span>
+      <!-- 已登录：用户头像（替换抖音图标） -->
+      <img id="loginAvatar" class="login-avatar" alt="" referrerpolicy="no-referrer" hidden />
+      <!-- hover 弹出卡片 -->
+      <div class="user-popover" id="userPopover">
+        <!-- 未登录视图 -->
+        <div id="guestView" class="guest-view">
+          <span class="popover-logo">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path fill="url(#dygrad)" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+            </svg>
+          </span>
+          <div class="popover-name">登录抖音账号</div>
+          <div class="popover-desc">登录后可接收礼物消息</div>
+          <button id="loginBtn" class="popover-btn">登录抖音</button>
+        </div>
+        <!-- 已登录视图 -->
+        <div id="userView" class="user-view" hidden>
+          <img id="popoverAvatar" class="popover-avatar" alt="" referrerpolicy="no-referrer" />
+          <span id="popoverAvatarFallback" class="popover-avatar-fallback" hidden>?</span>
+          <div id="popoverName" class="popover-name">-</div>
+          <div id="popoverDisplayId" class="popover-id"></div>
+          <div class="popover-stats">
+            <span class="popover-stat"><b id="popoverFollowing">-</b><i>关注</i></span>
+            <span class="popover-stat"><b id="popoverFans">-</b><i>粉丝</i></span>
+          </div>
+          <button id="logoutBtn" class="popover-btn ghost">退出登录</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="chat-panel">
+    <div class="chat-head">
+      <span id="roomInfo">未连接直播间</span>
+    </div>
+    <div id="messages" class="messages"></div>
+    <!-- 发送坞：即时发送（目标为当前展开的直播间）+ 定时弹幕入口 -->
+    <div class="send-dock" id="sendDock">
+      <div class="send-dock-target" id="sendTarget">未连接直播间，发送不可用</div>
+      <div class="send-dock-row">
+        <input id="sendInput" type="text" placeholder="输入弹幕内容，回车或点「发送」（登录后可用）" maxlength="100" spellcheck="false" disabled />
+        <button id="sendBtn" class="send-btn" disabled>发送</button>
+        <button id="schedOpenBtn" class="send-btn ghosted" disabled>定时弹幕</button>
+      </div>
+    </div>
+    <div class="chat-foot">
+      <button id="clearBtn" class="ghost">清空</button>
+      <button id="pauseBtn" class="ghost">暂停滚动</button>
+    </div>
+  </section>
+
+  <aside class="stats-panel">
+    <!-- 直播间手风琴列表：已监听的直播间，默认展开最后连接的；点击切换展开，同时只展开一个 -->
+    <div class="room-list" id="roomList"></div>
+    <div id="toast" class="toast"></div>
+  </aside>
+</main>
+
+<!-- 授权弹窗：机器码 + 激活 -->
+<div class="modal-mask" id="licenseModal" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <span>软件授权</span>
+      <button id="licenseModalClose" class="modal-close" title="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="license-status" id="licenseStatusText">读取中...</div>
+      <div class="license-field">
+        <label>本机机器码（购买时发给卖家）</label>
+        <div class="license-machine-row">
+          <code id="licenseMachine">-</code>
+          <button id="licenseCopyMachine" class="sched-btn">复制</button>
+        </div>
+      </div>
+      <div class="license-field">
+        <label>授权码</label>
+        <textarea id="licenseKeyInput" rows="3" placeholder="粘贴卖家提供的授权码" spellcheck="false"></textarea>
+      </div>
+      <div class="license-actions">
+        <button id="licenseActivateBtn" class="send-btn ghosted">激活</button>
+      </div>
+      <div class="license-result" id="licenseResult"></div>
+      <div class="license-tip">授权码与机器绑定，重装系统或更换电脑请联系卖家重新授权</div>
+    </div>
+  </div>
+</div>
+
+<!-- 定时弹幕弹窗（只展示当前展开直播间的任务） -->
+<div class="modal-mask" id="schedModal" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <span id="schedModalTitle">定时弹幕</span>
+      <button id="schedModalClose" class="modal-close" title="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-add-row">
+        <input id="modalSchedContent" type="text" placeholder="定时弹幕内容" maxlength="100" spellcheck="false" />
+        <input id="modalSchedInterval" type="number" min="5" max="3600" placeholder="间隔秒" />
+        <button id="modalSchedAdd" class="send-btn ghosted">添加</button>
+      </div>
+      <div class="modal-tip">到达第一个间隔时开始发送；同一直播间可添加多条</div>
+      <div class="sched-list modal-list" id="modalSchedList"></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
